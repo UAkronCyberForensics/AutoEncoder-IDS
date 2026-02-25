@@ -115,6 +115,10 @@ with torch.no_grad():
 
 mse_train = mse_train.numpy()
 
+# ------------------------------------
+# 9. Select Threshold
+#-------------------------------------
+
 threshold = np.percentile(mse_train, 95)
 print("\nAnomaly Threshold:", threshold)
 
