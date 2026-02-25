@@ -1,5 +1,3 @@
-#autoencoder_anomaly_pytorch.py
-
 import numpy as np
 import torch
 import torch.nn as nn
@@ -50,26 +48,26 @@ X_train, X_val = train_test_split(normal_tensor, test_size=0.2)
 # 5. Define Autoencoder Model
 # ---------------------------------------
 class Autoencoder(nn.Module):
-  def __init__(self, input_dim):
-    super(Autoencoder, self).__init__()
+    def __init__(self, input_dim):
+        super(Autoencoder, self).__init__()
 
-    self.encoder = nn.Sequential(
-      nn.Linear(input_dim, 16),
-      nn.ReLU(),
-      nn.Linear(16,8),
-      nn.ReLU()
-    )
+        self.encoder = nn.Sequential(
+            nn.Linear(input_dim, 16),
+            nn.ReLU(),
+            nn.Linear(16,8),
+            nn.ReLU()
+        )
 
-    self.decoder = nn.Sequential(
-      nn.Linear(8, 16),
-      nn.ReLU(),
-      nn.Linear(16, input_dim)
-    )
+        self.decoder = nn.Sequential(
+            nn.Linear(8, 16),
+            nn.ReLU(),
+            nn.Linear(16, input_dim)
+        )
 
-  def forward(self, x):
-    encoded = self.encoder(x)
-    decoded = self.decoder(encoded)
-    return decoded
+    def forward(self, x):
+        encoded = self.encoder(x)
+        decoded = self.decoder(encoded)
+        return decoded
 
 input_dim = normal_tensor.shape[1]
 model = Autoencoder(input_dim)
@@ -87,24 +85,24 @@ epochs = 50
 batch_size = 32
 
 for epoch in range(epochs):
-  model.train()
-  permutation = torch.randperm(X_train.size(0))
-  epoch_loss = 0
+    model.train()
+    permutation = torch.randperm(X_train.size(0))
+    epoch_loss = 0
 
-  for index in range(0, X_train.size(0), batch_size): # start at 0
-    indices = permutation[index:index + batch_size]
-    batch = X_train[indices]
+    for index in range(0, X_train.size(0), batch_size):  # start at 0
+        indices = permutation[index:index + batch_size]
+        batch = X_train[indices]
 
-    optimizer.zero_grad()
-    outputs = model(batch)
-    loss = criterion(outputs, batch)
-    loss.backward()
-    optimizer.step()
+        optimizer.zero_grad()
+        outputs = model(batch)
+        loss = criterion(outputs, batch)
+        loss.backward()
+        optimizer.step()
 
-    epoch_loss += loss.item() * batch.size(0) # sum over batch
+        epoch_loss += loss.item() * batch.size(0)  # sum over batch
 
-  epoch_loss /= X_train.size(0) # average over all samples
-  print(f"Epoch {epoch+1}/{epochs}, Loss: {epoch_loss:.6f}")
+    epoch_loss /= X_train.size(0)  # average over all samples
+    print(f"Epoch {epoch+1}/{epochs}, Loss: {epoch_loss:.6f}")
 
 # ------------------------------------
 # 8. Compute Reconstruction Error
@@ -112,8 +110,8 @@ for epoch in range(epochs):
 model.eval()
 
 with torch.no_grad():
-  reconstructed_train = model(normal_tensor)
-  mse_train = torch.mean((normal_tensor - reconstructed_train) ** 2, dim=1)
+    reconstructed_train = model(normal_tensor)
+    mse_train = torch.mean((normal_tensor - reconstructed_train) ** 2, dim=1)
 
 mse_train = mse_train.numpy()
 
@@ -136,4 +134,52 @@ plt.axvline(threshold, color='red', linestyle='--')
 plt.title("Reconstruction Error Distribution")
 plt.xlabel("Reconstruction Error")
 plt.ylabel("Frequency")
+plt.show()
+
+# ================
+# 12. Vis 2
+# ================
+# -------------------------------------
+# Compute Reconstruction Error (All Data)
+# -------------------------------------
+with torch.no_grad():
+    reconstructed_all = model(X_tensor)
+    mse_all = torch.mean((X_tensor - reconstructed_all) ** 2, dim=1)
+
+mse_all = mse_all.numpy()
+
+# Predictions
+predictions = mse_all > threshold
+
+# -------------------------------------
+# Dot Plot of Reconstruction Errors
+# -------------------------------------
+plt.clf()
+
+# Small vertical jitter so points don’t overlap perfectly
+jitter = np.random.normal(0, 0.01, size=len(mse_all))
+
+plt.scatter(
+    mse_all[y_true == 0],
+    jitter[y_true == 0],
+    c='blue',
+    alpha=0.6,
+    label='True Normal'
+)
+
+plt.scatter(
+    mse_all[y_true == 1],
+    jitter[y_true == 1],
+    c='red',
+    alpha=0.8,
+    label='True Anomaly'
+)
+
+# Threshold line
+plt.axvline(threshold, color='black', linestyle='--', label='Threshold')
+
+plt.yticks([])  # hide meaningless y-axis
+plt.xlabel("Reconstruction Error (MSE)")
+plt.title("Reconstruction Errors with Anomaly Classification")
+plt.legend()
 plt.show()
